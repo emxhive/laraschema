@@ -1,3 +1,6 @@
 /.laraschema
 /dist
 /node_modules
+/database
+/prodex
+/prodex
