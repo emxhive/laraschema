@@ -1,10 +1,11 @@
-import path from 'path';
+import { getResolvedRoot, resolveFromRoot } from "@/shared/utils/paths";
 
 export function getOutputPaths(cfg: any) {
    return {
-      migrations: path.resolve(process.cwd(), cfg.output?.migrations ?? 'database/migrations'),
-      models: path.resolve(process.cwd(), cfg.output?.models ?? 'app/Models'),
-      enums: path.resolve(process.cwd(), cfg.modeler?.outputEnumDir ?? cfg.output?.enums ?? 'app/Enums'),
-      backups: path.resolve(process.cwd(), '.laraschema/backups'),
+      migrations: resolveFromRoot(cfg, cfg.output?.migrations ?? 'database/migrations'),
+      models: resolveFromRoot(cfg, cfg.output?.models ?? 'app/Models'),
+      enums: resolveFromRoot(cfg, cfg.modeler?.outputEnumDir ?? cfg.output?.enums ?? 'app/Enums'),
+      backups: resolveFromRoot(cfg, '.laraschema/backups'),
+      root: getResolvedRoot(cfg),
    };
 }

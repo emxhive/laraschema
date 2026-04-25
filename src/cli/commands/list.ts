@@ -49,7 +49,7 @@ export function registerListCommand(cli: Command) {
             files.forEach((f) => console.log(' -', f));
 
             if (opts.sorted) {
-               const bakDir = path.join(out.backups, path.relative(process.cwd(), out.migrations));
+               const bakDir = path.join(out.backups, path.relative(out.root, out.migrations));
                const bakFiles = existsSync(bakDir) ? readdirSync(bakDir).filter((f) => f.endsWith('.php')) : [];
                if (!bakFiles.length) {
                   console.log('   (no backups found - cannot show sorted list)');

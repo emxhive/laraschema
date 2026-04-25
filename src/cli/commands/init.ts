@@ -75,6 +75,10 @@ generator types {
          } catch {
             const cfgTemplate = `
 module.exports = {
+  // Optional Laravel app root.
+  // Useful when LaraSchema is run from a schema/package folder but writes into a Laravel app.
+  // rootDir: "../laravel-app",
+
   tablePrefix: "",
   tableSuffix: "",
   stubDir:     "${stubDirRel}",

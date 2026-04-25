@@ -100,7 +100,7 @@ export function registerCleanCommand(cli: Command) {
          };
 
          async function cleanByType(kind: 'migration' | 'model' | 'enum', outDir: string, matcher: (basenameGenerated: string) => boolean) {
-            const bakDir = path.join(out.backups, path.relative(process.cwd(), outDir));
+            const bakDir = path.join(out.backups, path.relative(out.root, outDir));
             const bakFiles = (await listRecursive(bakDir)).filter(isBak);
 
             if (!bakFiles.length) {

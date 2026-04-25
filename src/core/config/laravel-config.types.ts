@@ -85,6 +85,9 @@ export interface LaravelGeneratorConfig {
  *  Top-level shared config  (visible to all generators)
  * ---------------------------------------------------------- */
 export interface LaravelSharedConfig {
+   /** Optional Laravel app root for generated outputs/backups. */
+   rootDir?: string;
+
    /** Table name decoration applied globally. */
    tablePrefix?: string;
    tableSuffix?: string;

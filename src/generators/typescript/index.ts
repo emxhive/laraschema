@@ -18,6 +18,7 @@ import { TsPrinter } from "./printer/typescript-printer.js";
 import { writeWithMerge } from "@/core/writer/write-with-merge";
 import { addToConfig } from "@/core/config/config-store";
 import { resolveStub } from "@/core/stubs/resolve-stub";
+import { resolveFromRoot } from "@/shared/utils/paths";
 /**
  * TS generator config:
  * - everything from TypesConfigOverride, except we own `stubDir` + `groups`
@@ -141,12 +142,12 @@ export async function generateTypesFromPrisma(options: GeneratorOptions) {
     };
 
     // --- 4. Ensure TS output directory exists -------------------------
-    const tsOutDir = path.resolve(process.cwd(), cfg.outputDir!);
+    const tsOutDir = resolveFromRoot(shared, cfg.outputDir!);
     if (!existsSync(tsOutDir)) {
         mkdirSync(tsOutDir, { recursive: true });
     }
 
-    addToConfig('typescript', cfg);
+    addToConfig('typescript', { ...cfg, rootDir: shared.rootDir });
     addToConfig('model', { tablePrefix: cfg.tablePrefix, tableSuffix: cfg.tableSuffix });
 
     // Tell diff-writer how to pretty-print TS (if enabled)

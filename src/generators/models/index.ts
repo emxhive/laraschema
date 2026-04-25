@@ -12,6 +12,7 @@ import { writeWithMerge } from "@/core/writer/write-with-merge";
 import { ModelConfigOverride, StubGroupConfig } from "@/core/config/laravel-config.types.js";
 import { loadSharedConfig } from "@/core/config/load-shared-config";
 import { buildModelContent } from "@/shared/build/build-model-content";
+import { resolveFromRoot } from "@/shared/utils/paths";
 
 export interface ModelConfig extends StubConfig, Omit<ModelConfigOverride, 'groups' | 'stubDir'> { }
 
@@ -72,19 +73,19 @@ export async function generateLaravelModels(options: GeneratorOptions) {
       enumNamespace: pick("enumNamespace"),
    };
 
-   addToConfig('model', cfg);
+   addToConfig('model', { ...cfg, rootDir: shared.rootDir });
 
    // 1) Determine and ensure output directories
    const modelsDir = cfg.outputDir
-      ? path.resolve(process.cwd(), cfg.outputDir)
-      : path.resolve(process.cwd(), getOutDir(generator));
+      ? resolveFromRoot(shared, cfg.outputDir)
+      : resolveFromRoot(shared, getOutDir(generator));
    if (!existsSync(modelsDir)) {
       mkdirSync(modelsDir, { recursive: true });
    }
 
    const enumsDir = cfg.outputEnumDir
-      ? path.resolve(process.cwd(), cfg.outputEnumDir)
-      : path.resolve(process.cwd(), 'app/Enums');
+      ? resolveFromRoot(shared, cfg.outputEnumDir)
+      : resolveFromRoot(shared, 'app/Enums');
 
    if (!existsSync(enumsDir)) {
       mkdirSync(enumsDir, { recursive: true });

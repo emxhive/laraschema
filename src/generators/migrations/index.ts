@@ -10,6 +10,7 @@ import { sortMigrations } from "@/shared/sorting/sort-migrations.js";
 import { writeWithMerge } from "@/core/writer/write-with-merge.js";
 import { loadSharedConfig } from "@/core/config/load-shared-config.js";
 import { MigratorConfigOverride, StubGroupConfig } from "@/core/config/laravel-config.types.js";
+import { resolveFromRoot } from "@/shared/utils/paths";
 
 export interface MigratorConfig extends StubConfig, Omit<MigratorConfigOverride, 'groups' | 'stubDir'> {
 }
@@ -67,11 +68,11 @@ export async function generateLaravelSchema(options: GeneratorOptions): Promise<
       allowUnsigned: pick('allowUnsigned', false),
    };
 
-   addToConfig('migrator', cfg);
+   addToConfig('migrator', { ...cfg, rootDir: shared.rootDir });
    // 1) Determine and ensure output directory exists
    const baseOut = cfg.outputDir
-      ? path.resolve(process.cwd(), cfg.outputDir)
-      : getOutDir(generator);
+      ? resolveFromRoot(shared, cfg.outputDir)
+      : resolveFromRoot(shared, getOutDir(generator));
    if (!existsSync(baseOut)) {
       mkdirSync(baseOut, { recursive: true });
    }
