@@ -1,6 +1,6 @@
 {
   "name": "laraschema",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Generate Laravel migrations, models, enums, and TypeScript declarations from Prisma schemas",
   "type": "module",
   "main": "dist/index.js",
