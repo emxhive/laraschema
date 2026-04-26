@@ -17,7 +17,7 @@ export function registerInitCommand(cli: Command) {
          const stubDirRel = './' + path.relative(process.cwd(), userStubs).replace(/\\/g, '/');
 
          const __dirname = path.dirname(fileURLToPath(import.meta.url));
-         const pkgStubs = path.resolve(__dirname, '../../../stubs');
+         const pkgStubs = path.resolve(__dirname, '../../stubs');
 
          let schema = await fs.readFile(schemaPath, 'utf-8');
 
