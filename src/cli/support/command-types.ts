@@ -4,4 +4,5 @@ export interface CustomizeOptions {
    schema: string;
    types: string[];
    names: string[];
+   update?: boolean;
 }

@@ -40,13 +40,28 @@ const hit = (table: string, pattern: RegExp | string) =>
 export function resolveStub(
    cfg: StubConfig | undefined,
    type: 'migration' | 'model' | 'enum' | 'ts',
-   table: string
+   table: string,
+   mode: 'create' | 'update' = 'create',
 ): string | undefined {
    // no stubDir configured → no resolution possible
    if (!cfg?.stubDir) return;
 
    // root: <stubDir>/<type>
    const root = path.resolve(process.cwd(), cfg.stubDir, type);
+
+   if (type === 'migration' && mode === 'update') {
+      const updateDirect = path.join(root, `${table}.update.stub`);
+      if (existsSync(updateDirect)) return updateDirect;
+
+      const direct = path.join(root, `${table}.stub`);
+      if (existsSync(direct)) return direct;
+
+      const updateIndex = path.join(root, 'index.update.stub');
+      if (existsSync(updateIndex)) return updateIndex;
+
+      const fallback = path.join(root, 'index.stub');
+      return existsSync(fallback) ? fallback : undefined;
+   }
 
    // A) direct per-table override: <root>/<table>.stub
    const direct = path.join(root, `${table}.stub`);

@@ -181,6 +181,12 @@ Creates per-table, per-model, per-enum, or per-TypeScript stub files from the ma
 
 ```bash
 laraschema customize -t migration,model -n users,accounts
+
+Create update migration stub overrides:
+
+```bash
+laraschema customize -t migration -n users,accounts --update
+```
 ```
 
 Create a PHP enum stub override:
@@ -599,6 +605,15 @@ For a generated item, LaraSchema resolves stubs in this order:
 
 3. Default stub
    stubs/<type>/index.stub
+
+For update-mode migrations (`@update`), the resolver uses:
+
+```txt
+1. stubs/migration/<table>.update.stub
+2. stubs/migration/<table>.stub
+3. stubs/migration/index.update.stub
+4. stubs/migration/index.stub
+```
 ```
 
 Examples:
@@ -614,9 +629,12 @@ prisma/stubs/ts/User.stub
 
 ```bash
 laraschema customize -t migration -n users
+laraschema customize -t migration -n users --update
 laraschema customize -t model -n User
 laraschema customize -t enum -n UserStatus
 laraschema customize -t ts -n User
+
+`--update` is migration-only and creates `*.update.stub` files.
 ```
 
 ---
@@ -1263,6 +1281,7 @@ The same applies to supported list-style directives such as:
 @entity
 @local
 @silent
+@update
 ```
 
 For example, all of these are valid ways to declare eager-loaded relations:
@@ -1301,11 +1320,12 @@ model User {
 | Syntax group          | Directives                                                                                                     | Supported forms                                                                          |
 | --------------------- | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | Boolean flags         | `@fillable`, `@hidden`, `@guarded`, `@with`, `@pivot`, `@withTimestamps`                                       | Plain presence, for example `/// @fillable`.                                             |
-| Flexible lists        | `@fillable`, `@hidden`, `@guarded`, `@with`, `@touch`, `@pivot`, `@pivotAlias`, `@entity`, `@local`, `@silent` | `@tag{a,b}`, `@tag(a,b)`, `@tag: a,b`.                                                   |
+| Flexible lists        | `@fillable`, `@hidden`, `@guarded`, `@with`, `@touch`, `@pivot`, `@pivotAlias`, `@entity`, `@local`, `@silent`, `@update` | `@tag{a,b}`, `@tag(a,b)`, `@tag: a,b`.                                                   |
 | Appended attributes   | `@appends`                                                                                                     | `@appends{a,b}`, `@appends(a,b)`, `@appends: a,b`; entries may be `name` or `name:type`. |
 | Structured field type | `@type`                                                                                                        | Brace object syntax only: `@type{ import:'...', type:'...' }`.                           |
 | Field cast            | `@cast`                                                                                                        | Brace syntax only: `@cast{datetime}` or `@cast{decimal:2}`.                              |
 | Class references      | `@trait`, `@use`, `@implements`, `@observer`, `@factory`, `@extend`                                            | Colon syntax only: `@trait:Foo\Bar`, optionally `as Alias` where supported.              |
+| Class modifiers       | `@abstract`                                                                                                     | Plain presence, for example `/// @abstract`.                                              |
 | Morph relations       | `@morph`                                                                                                       | Parentheses syntax: `@morph(name: commentable, type: many, model: Comment)`.             |
 
 ### Directive summary
@@ -1321,6 +1341,7 @@ model User {
 | `@trait:...`       | Model                        | Adds a trait import/use.                                                |
 | `@use:...`         | Model                        | Adds a raw import/use line.                                             |
 | `@extend:...`      | Model                        | Changes parent class.                                                   |
+| `@abstract`        | Model                        | Emits `abstract class ...` for the generated model.                     |
 | `@implements:...`  | Model                        | Adds implemented interface.                                             |
 | `@observer:...`    | Model                        | Adds observer metadata.                                                 |
 | `@factory:...`     | Model                        | Adds factory metadata.                                                  |
@@ -1328,6 +1349,7 @@ model User {
 | `@appends{...}`    | Model                        | Adds `$appends` and TS appended properties.                             |
 | `@local`           | Relation field               | Skips a specific relation method and/or FK generation.                  |
 | `@silent`          | Model or enum                | Parses but does not emit selected output.                               |
+| `@update`          | Model                        | Emits update-style migration names for selected model/table targets.    |
 | `@morph(...)`      | Model                        | Declares owner-side polymorphic relations.                              |
 | `@pivot`           | Pivot model or pivot field   | Includes extra pivot columns in `withPivot(...)`.                       |
 | `@withTimestamps`  | Pivot model                  | Adds `withTimestamps()` to relation chain.                              |
@@ -1407,12 +1429,44 @@ Class/reference directives use colon syntax:
 /// @observer:App\\Observers\\UserObserver
 /// @factory:Database\\Factories\\UserFactory
 /// @extend:Illuminate\\Foundation\\Auth\\User as Authenticatable
+/// @abstract
 model User {
   id Int @id @default(autoincrement())
 }
 ```
 
 Where supported, `as Alias` controls the imported short name used in the generated model.
+
+</details>
+
+<details>
+<summary>`@update`</summary>
+
+Use `@update` on a model to switch migration naming mode from:
+
+```txt
+*_create_<table>_table.php
+```
+
+to:
+
+```txt
+*_update_<table>_table.php
+```
+
+Target forms:
+
+```prisma
+/// @update
+/// @update(User,accounts)
+/// @update{User,accounts}
+/// @update: User,accounts
+model User {
+  id Int @id @default(autoincrement())
+}
+```
+
+Targets may be model names or resolved table names (`dbName`).
 
 </details>
 

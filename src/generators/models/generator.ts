@@ -164,6 +164,7 @@ export class PrismaToLaravelModelGenerator {
             const extendRE = /@extend:([^\s]+)(?:\s+as\s+(\w+))?/;
             let parentClass = "Model";
             let parentUse: UseImport | undefined;
+            const isAbstract = /@abstract\b/i.test(modelDoc);
 
             const extMatch = extendRE.exec(modelDoc);
             if (extMatch) {
@@ -239,6 +240,7 @@ export class PrismaToLaravelModelGenerator {
                 imports,
                 isIgnored: isForModel(parseSilentDirective(modelDoc)),
                 extends: parentClass !== 'Model' ? parentClass : undefined,
+                abstract: isAbstract,
                 docblockProps,
                 directives: modelDirectives
             };

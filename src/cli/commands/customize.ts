@@ -13,14 +13,19 @@ export function registerCustomizeCommand(cli: Command) {
       .option('-s, --schema <path>', 'Prisma schema file', 'prisma/schema.prisma')
       .option('-t, --types <list>', 'Comma-separated: migration,model,enum,ts', (val: string) => val.split(',').map((s) => s.trim().toLowerCase()), [])
       .option('-n, --names <list>', 'Comma-separated base names', (val: string) => val.split(',').map((s) => s.trim()), [])
+      .option('--update', 'Scaffold update migration stubs (*.update.stub) for migration type')
       .action(async (opts: CustomizeOptions) => {
          const want = opts.types as StubType[];
          const bases = opts.names;
+         const updateMode = !!opts.update;
 
          if (!want.length) throw new Error('Specify at least one type with -t');
          if (!bases.length) throw new Error('Specify at least one name with -n');
          if (want.includes('enum') && want.length > 1) {
             throw new Error('`enum` cannot be combined with other types');
+         }
+         if (updateMode && !want.includes('migration')) {
+            throw new Error('`--update` can only be used when `migration` is included in --types');
          }
 
          const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -67,17 +72,24 @@ export function registerCustomizeCommand(cli: Command) {
 
             for (const kind of doBoth ? ['migration', 'model'] : [t]) {
                const dir = path.join(stubRoot, kind);
-               const idx = resolveStubIndex(stubRoot, kind as 'migration' | 'model', __dirname);
+               const shouldUseUpdateStub = kind === 'migration' && updateMode;
+               const idx = resolveStubIndex(
+                  stubRoot,
+                  kind as 'migration' | 'model',
+                  __dirname,
+                  shouldUseUpdateStub
+               );
                await fs.mkdir(dir, { recursive: true });
 
                for (const base of bases) {
-                  const dst = path.join(dir, `${base}.stub`);
+                  const fileName = shouldUseUpdateStub ? `${base}.update.stub` : `${base}.stub`;
+                  const dst = path.join(dir, fileName);
                   try {
                      await fs.access(dst);
-                     console.log(`Skip ${kind}/${base}.stub`);
+                     console.log(`Skip ${kind}/${fileName}`);
                   } catch {
                      await fs.copyFile(idx, dst);
-                     console.log(`Created ${kind}/${base}.stub`);
+                     console.log(`Created ${kind}/${fileName}`);
                   }
                }
             }

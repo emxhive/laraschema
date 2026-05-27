@@ -5,7 +5,7 @@ import {ColumnDefinition} from "@/generators/migrations/definitions/column-defin
 import {DefaultMaps, Rule} from "./rules/rules.js";
 import { getConfig } from "@/core/config/config-store";
 import { decorate } from "@/shared/naming/decorate";
-import { isForMigrator, parseSilentDirective } from "@/shared/directives/parse-directives";
+import { isForMigrator, parseSilentDirective, parseUpdateDirective } from "@/shared/directives/parse-directives";
 /**
  * The shape returned by the generator—pure data, no rendering.
  */
@@ -20,6 +20,7 @@ export interface Migration {
     definitions: ColumnDefinition[];
     /** Marks this entire model as ignored */
     local?: boolean;
+    mode?: 'create' | 'update';
 }
 
 export class PrismaToLaravelMigrationGenerator {
@@ -72,7 +73,11 @@ export class PrismaToLaravelMigrationGenerator {
         return indexMap;
     }
 
-    private resolveModel(model: DMMF.Model, indexMap: Map<string, DMMF.Index[]>): Migration {
+    private resolveModel(
+        model: DMMF.Model,
+        indexMap: Map<string, DMMF.Index[]>,
+        updateTargets: Set<string>,
+    ): Migration {
         const tableName = model.dbName ?? model.name;
         const definitions = this.columnGen.getColumns(tableName);
         const columns = this.resolveColumns(definitions);
@@ -86,6 +91,7 @@ export class PrismaToLaravelMigrationGenerator {
             local: isSilent,
             definitions,
             statements: [...columns, ...utilities],
+            mode: updateTargets.has(model.name) || updateTargets.has(tableName) ? 'update' : 'create',
         };
     }
 
@@ -94,7 +100,28 @@ export class PrismaToLaravelMigrationGenerator {
      */
     public generateAll(): Migration[] {
         const indexMap = this.buildModelIndexMap();
-        return this.dmmf.datamodel.models.map(model => this.resolveModel(model, indexMap));
+        const updateTargets = new Set<string>();
+        const names = new Set(this.dmmf.datamodel.models.map((m) => m.name));
+        const tables = new Set(this.dmmf.datamodel.models.map((m) => m.dbName ?? m.name));
+
+        for (const model of this.dmmf.datamodel.models) {
+            const targets = parseUpdateDirective(model.documentation ?? "");
+            if (targets.length === 0) {
+                if (/@update(?![\w])/i.test(model.documentation ?? "")) {
+                    updateTargets.add(model.name);
+                    updateTargets.add(model.dbName ?? model.name);
+                }
+                continue;
+            }
+
+            for (const target of targets.map((t) => t.trim()).filter(Boolean)) {
+                if (names.has(target) || tables.has(target)) {
+                    updateTargets.add(target);
+                }
+            }
+        }
+
+        return this.dmmf.datamodel.models.map(model => this.resolveModel(model, indexMap, updateTargets));
     }
 
     /**

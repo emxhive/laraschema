@@ -115,7 +115,8 @@ export async function generateLaravelSchema(options: GeneratorOptions): Promise<
    const fallbackStubFile = stub
       ? path.resolve(process.cwd(), stub)
       : getStubPath("migration.stub");
-   let printer = new StubMigrationPrinter(cfg, fallbackStubFile);
+   const fallbackUpdateStubFile = getStubPath("migration.update.stub");
+   let printer = new StubMigrationPrinter(cfg, fallbackStubFile, fallbackUpdateStubFile);
 
    // 5) Write each migration file
    const active = migrations.filter(m => !m.isIgnored);
@@ -128,18 +129,19 @@ export async function generateLaravelSchema(options: GeneratorOptions): Promise<
       let timestamp = formatLaravelTimestamp(now, seq, padWidth);
 
       // 3) Check for an existing file (old path before sort/repath)
+      const mode = mig.mode ?? 'create';
       const existingFile = readdirSync(baseOut).find(f =>
-         f.endsWith(`_create_${mig.name}_table.php`)
+         f.endsWith(`_${mode}_${mig.name}_table.php`)
       );
       const existingPath = existingFile ? path.join(baseOut, existingFile) : undefined;
 
       // 4) If creating new, ensure uniqueness (re-runs within same second)
-      let fileName = existingFile ?? `${timestamp}_create_${mig.name}_table.php`;
+      let fileName = existingFile ?? `${timestamp}_${mode}_${mig.name}_table.php`;
       let filePath = path.join(baseOut, fileName);
       while (!existingFile && existsSync(filePath)) {
          seq += 1;
          timestamp = formatLaravelTimestamp(now, seq, padWidth);
-         fileName = `${timestamp}_create_${mig.name}_table.php`;
+         fileName = `${timestamp}_${mode}_${mig.name}_table.php`;
          filePath = path.join(baseOut, fileName);
       }
 

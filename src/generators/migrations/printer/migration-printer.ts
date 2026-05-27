@@ -14,6 +14,7 @@ export interface PrinterNameOpts {
 
 export class StubMigrationPrinter {
    #currentStubPath = "";
+   #currentMode: 'create' | 'update' = 'create';
    private tmplFn!: (
       tableName: string,
       columns: string,
@@ -26,22 +27,25 @@ export class StubMigrationPrinter {
       /** base config for per-table stub resolution */
       private cfg: StubConfig & PrinterNameOpts,
       /** optional global override: if set, always use this stub */
-      private globalStubPath?: string
+      private globalStubPath?: string,
+      /** optional update-mode override */
+      private globalUpdateStubPath?: string
    ) { }
 
    /** Switch to the correct stub for this table (or reuse the last one) */
-   private ensureStub(tableName: string) {
+   private ensureStub(tableName: string, mode: 'create' | 'update') {
       /* 1) choose stub path */
-      const resolved = resolveStub(this.cfg, "migration", tableName);
+      const resolved = resolveStub(this.cfg, "migration", tableName, mode);
       const stubPath = resolved
          ? resolved
-         : this.globalStubPath
-            ? path.resolve(process.cwd(), this.globalStubPath)
-            : (() => {
-               throw new Error(`No stub found for migration '${tableName}'`);
-            })();
-
-      if (stubPath === this.#currentStubPath) return;
+         : mode === 'update' && this.globalUpdateStubPath
+            ? path.resolve(process.cwd(), this.globalUpdateStubPath)
+            : this.globalStubPath
+               ? path.resolve(process.cwd(), this.globalStubPath)
+               : (() => {
+                  throw new Error(`No stub found for migration '${tableName}'`);
+               })();
+      if (stubPath === this.#currentStubPath && mode === this.#currentMode) return;
 
       /* 2) compile template */
       let raw = StubMigrationPrinter.textCache.get(stubPath);
@@ -59,6 +63,7 @@ export class StubMigrationPrinter {
       ) as typeof this.tmplFn;
 
       this.#currentStubPath = stubPath;
+      this.#currentMode = mode;
    }
 
    /**
@@ -66,7 +71,8 @@ export class StubMigrationPrinter {
     * Returns both the full file and the raw column block.
     */
    public printMigration(mig: Migration) {
-      this.ensureStub(mig.tableName);
+      const mode = mig.mode ?? 'create';
+      this.ensureStub(mig.tableName, mode);
 
       const columns = mig.statements
          .map((l) => "            " + l)

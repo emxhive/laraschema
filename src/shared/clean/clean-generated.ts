@@ -17,6 +17,7 @@ const BUILT_IN_DIRECTIVES = [
     "trait",
     "use",
     "extend",
+    "abstract",
     "implements",
     "observer",
     "factory",
@@ -30,6 +31,7 @@ const BUILT_IN_DIRECTIVES = [
 
     // migrations
     "unsigned",
+    "update",
 
     // relation / pivot / morph
     "morph",

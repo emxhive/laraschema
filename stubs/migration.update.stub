@@ -12,7 +12,7 @@
 |
 | Examples:
 |   laraschema customize -t model -n User
-|   laraschema customize -t migration -n users
+|   laraschema customize -t migration -n users --update
 |   laraschema customize -t enum -n UserStatus
 |
 | Short alias:
@@ -20,18 +20,28 @@
 |
 |--------------------------------------------------------------------------
 */
-namespace ${model.namespace}\\Models;
+use Illuminate\\Database\\Migrations\\Migration;
+use Illuminate\\Database\\Schema\\Blueprint;
+use Illuminate\\Support\\Facades\\Schema;
+use Illuminate\\Support\\Facades\\DB;
 
-${model.imports.join('\n')}${model.extends && model.extends !== 'Illuminate\Database\Eloquent\Model'
-  ? ''
-  : '\nuse Illuminate\\Database\\Eloquent\\Model;'} 
-
-${docblock}
-${model.abstract ? 'abstract ' : ''}class ${model.className} extends ${model.extends ?? 'Model'}${model.implements.length
-  ? ' implements ' + model.implements.join(', ')
-  : ''} 
+return new class extends Migration
 {
-    protected $table = '${model.tableName}';
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('${tableName}', static function (Blueprint $table) {
+            ${columns}
+        });
+    }
 
-    ${content}
-}
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        // Intentionally left empty for generated update migrations.
+    }
+};

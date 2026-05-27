@@ -43,6 +43,13 @@ export const parseLocalDirective = (doc?: string) =>
 export const parseSilentDirective = (doc?: string) =>
    parseTargetDirective('silent', doc, GenTarget.Model | GenTarget.Migrator);
 
+export const parseUpdateDirective = (doc?: string): string[] => {
+   if (!doc) return [];
+   const sawTag = /@update(?![\w])/i.test(doc);
+   if (!sawTag) return [];
+   return listFrom(doc, "update");
+};
+
 export const listFrom = (doc: string, tag: string): string[] => {
    const out: string[] = [];
 
