@@ -73,6 +73,7 @@ export async function generateLaravelModels(options: GeneratorOptions) {
         namespace: pick("namespace", "App"),
         modelNamespace: pick("modelNamespace"),
         enumNamespace: pick("enumNamespace"),
+        hooks: pick('hooks'),
     };
 
     addToConfig('model', {...cfg, rootDir: shared.rootDir});
@@ -116,10 +117,10 @@ export async function generateLaravelModels(options: GeneratorOptions) {
     } = schemaGen.generateAll();
 
     // 3b) Run hooks
-    await runModelerHooks(config.hooks, {
+    await runModelerHooks(cfg.hooks, {
         models,
         enums,
-        config,
+        config: cfg,
     });
 
     // 4) Write enum files

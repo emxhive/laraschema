@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { tmpdir } from "node:os";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, rm, writeFile, readFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -73,7 +73,7 @@ test("model castMaps overrides built-ins and preserves @cast directives", async 
   const root = await mkdtemp(path.join(tmpdir(), "laraschema-castmaps-"));
   const prismaDir = path.join(root, "prisma");
   const schemaPath = path.join(prismaDir, "schema.prisma");
-  const configPath = path.join(prismaDir, "prisma-laravel.config.js");
+  const configPath = path.join(prismaDir, "laraschema.config.js");
 
   try {
     await mkdir(prismaDir, { recursive: true });
@@ -156,4 +156,64 @@ test("cli bin help lists expected commands", () => {
   assert.match(output, /\bgen\b/);
   assert.match(output, /\blist\b/);
   assert.match(output, /\bclean\b/);
+});
+
+test("modeler hooks run and receive correct context", async () => {
+  const { generateLaravelModels } = await import(distIndexUrl);
+  const root = await mkdtemp(path.join(tmpdir(), "laraschema-hooks-"));
+  const prismaDir = path.join(root, "prisma");
+  const schemaPath = path.join(prismaDir, "schema.prisma");
+  const configPath = path.join(prismaDir, "laraschema.config.js");
+  const outputPath = path.join(root, "hook-output.json");
+
+  try {
+    await mkdir(prismaDir, { recursive: true });
+    await writeFile(schemaPath, "// test schema\n", "utf8");
+    await writeFile(
+      configPath,
+      `module.exports = {
+  modeler: {
+    hooks: [
+      async (ctx) => {
+        await ctx.writeJson(
+          "${outputPath.replace(/\\/g, "/")}",
+          {
+            hasModels: Array.isArray(ctx.models),
+            hasEnums: Array.isArray(ctx.enums),
+            configNamespace: ctx.config?.namespace,
+          }
+        );
+      }
+    ],
+  },
+};`,
+      "utf8",
+    );
+
+    await generateLaravelModels({
+      dmmf: buildDmmf(),
+      generator: {
+        config: {
+          noEmit: true,
+          outputDir: "app/Models",
+          outputEnumDir: "app/Enums",
+        },
+        sourceFilePath: schemaPath,
+      },
+      otherGenerators: [],
+      schemaPath,
+      datasources: [],
+      datamodel: "",
+      version: "",
+    });
+
+    const fileContent = await readFile(outputPath, "utf8");
+    const parsed = JSON.parse(fileContent);
+
+    assert.equal(parsed.hasModels, true, "Hook context should have models array");
+    assert.equal(parsed.hasEnums, true, "Hook context should have enums array");
+    assert.equal(parsed.configNamespace, "App", "Hook context should contain the resolved config");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
