@@ -369,6 +369,8 @@ module.exports = {
   modeler: {
     outputDir: "app/Models",
     outputEnumDir: "app/Enums",
+    modelNamespace: "App\\Models",
+    enumNamespace: "App\\Enums",
     prettier: true,
     overwriteExisting: true,
 
@@ -431,9 +433,11 @@ module.exports = {
 | `output.ts`          | Default TypeScript output folder.                                        |
 | `migrate`            | Migration generator overrides.                                           |
 | `modeler`            | Model and PHP enum generator overrides.                                  |
-| `modeler.castMaps`   | Custom Prisma-type to Eloquent-cast mappings.                            |
-| `modeler.directives` | Project-specific comment directive registry for model generation.        |
-| `modeler.hooks`      | Hook files or functions run after model/enums are built.                 |
+| `modeler.castMaps`       | Custom Prisma-type to Eloquent-cast mappings.                            |
+| `modeler.modelNamespace` | Full PHP namespace for generated Eloquent model classes.                 |
+| `modeler.enumNamespace`  | Full PHP namespace for generated PHP enum classes.                       |
+| `modeler.directives`    | Project-specific comment directive registry for model generation.        |
+| `modeler.hooks`         | Hook files or functions run after model/enums are built.                 |
 | `ts`                 | TypeScript generator overrides.                                          |
 
 <details>
@@ -497,7 +501,7 @@ export interface ModelConfigOverride {
   prettier?: boolean;
   groups?: string | StubGroupConfig[];
   noEmit?: boolean;
-  namespace?: "App\\";
+  namespace?: string;
   modelStubPath?: string;
   enumStubPath?: string;
   outputEnumDir?: string;
@@ -573,6 +577,8 @@ Backup baselines are also stored under the resolved root:
 ```
 
 This makes generation predictable when your schema and Laravel application live in different folders.
+
+Output paths do not imply PHP namespaces. If generated models or enums live outside the default Laravel PSR-4 layout, set `modeler.modelNamespace` and `modeler.enumNamespace` explicitly.
 
 ---
 

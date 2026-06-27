@@ -21,7 +21,7 @@
 |--------------------------------------------------------------------------
 */
 
-namespace ${enumDef.namespace}\\Enums;
+namespace ${enumDef.namespace};
 
 enum ${enumDef.name}: string
 {

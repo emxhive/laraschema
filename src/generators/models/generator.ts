@@ -8,6 +8,13 @@ import {isForModel, listFrom, parseSilentDirective} from "@/shared/directives/pa
 import {parseAppendsDirective} from "@/generators/typescript/directives";
 import {parseCustomDirectives} from '@/shared/directives/parse-custom-directives';
 
+const normalizePhpNamespace = (value: string): string => value.replace(/\\+$/, "");
+
+const appendPhpNamespace = (base: string, segment: string): string => {
+    const normalizedBase = normalizePhpNamespace(base);
+    return normalizedBase ? `${normalizedBase}\\${segment}` : segment;
+};
+
 /**
  * Build ModelDefinition[] + EnumDefinition[] from your DMMF.
  */
@@ -21,12 +28,14 @@ export class PrismaToLaravelModelGenerator {
         models: ModelDefinition[];
         enums: EnumDefinition[];
     } {
-        const {namespace: baseNamespace, modelNamespace, enumNamespace} = getConfig('model') ?? {};
+        const {namespace: baseNamespace = 'App', modelNamespace, enumNamespace} = getConfig('model') ?? {};
+        const defaultModelNamespace = appendPhpNamespace(baseNamespace, 'Models');
+        const defaultEnumNamespace = appendPhpNamespace(baseNamespace, 'Enums');
 
         // 1) Extract all Prisma enums into EnumDefinition[]
         const enums: EnumDefinition[] = this.dmmf.datamodel.enums.map((e) => ({
             name: e.name,
-            namespace: enumNamespace ?? baseNamespace ?? 'App', // filled in by printer
+            namespace: normalizePhpNamespace(enumNamespace ?? defaultEnumNamespace),
             values: e.values.map((v) => v.name),
         }));
 
@@ -220,7 +229,7 @@ export class PrismaToLaravelModelGenerator {
                 docblockProps.push(`@property ${type} $${rel.name}`);
             }
 
-            const namespace = modelNamespace ?? baseNamespace ?? 'App';
+            const namespace = normalizePhpNamespace(modelNamespace ?? defaultModelNamespace);
 
             /* ── 2.6  Final ModelDefinition ────────────────────────────────── */
             return {

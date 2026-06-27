@@ -81,8 +81,13 @@ export interface LaravelGeneratorConfig {
    /** Skip file emission for *this* generator only. */
    noEmit?: boolean;
 
-   /** Default namespace for local imports (PHP generators). */
-   namespace?: "App\\";
+   /**
+    * Base PHP namespace for generated Laravel artifacts.
+    *
+    * `modelNamespace` and `enumNamespace` should be used when full concrete
+    * namespaces are needed for model and enum classes.
+    */
+   namespace?: string;
 }
 
 /* ------------------------------------------------------------
@@ -269,7 +274,9 @@ export interface ModelConfigOverride extends LaravelGeneratorConfig {
    allowedPivotExtraFields?: string[];
    castMaps?: Record<string, CastMapValue>;
 
+   /** Full PHP namespace for generated Eloquent model classes. */
    modelNamespace?: string;
+   /** Full PHP namespace for generated PHP enum classes. */
    enumNamespace?: string;
    /**
     * Custom Prisma comment directives parsed during model generation.

@@ -140,7 +140,10 @@ export async function generateLaravelModels(options: GeneratorOptions) {
     // 5) Write model files
     for (const model of models) {
         if (model.isIgnored) continue;
-        let imports = model.properties.filter(item => item.enumRef).map(item => `use ${cfg.namespace ?? 'App'}\\Enums\\${item.enumRef};`);
+        const enumImports = new Map(enums.map(enumDef => [enumDef.name, enumDef.namespace]));
+        let imports = model.properties
+            .filter(item => item.enumRef)
+            .map(item => `use ${enumImports.get(item.enumRef as string) ?? appendPhpNamespace(cfg.namespace ?? 'App', 'Enums')}\\${item.enumRef};`);
         //----
         if (Array.isArray(model.imports)) model.imports.push(...imports);
         else model.imports = imports;
@@ -169,4 +172,13 @@ export async function generateLaravelModels(options: GeneratorOptions) {
 
 function getOutDir(generator: GeneratorConfig): string {
     return generator.output?.value ?? "app/Models";
+}
+
+function normalizePhpNamespace(value: string): string {
+    return value.replace(/\\+$/, "");
+}
+
+function appendPhpNamespace(base: string, segment: string): string {
+    const normalizedBase = normalizePhpNamespace(base);
+    return normalizedBase ? `${normalizedBase}\\${segment}` : segment;
 }
