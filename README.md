@@ -367,12 +367,19 @@ module.exports = {
   },
 
   modeler: {
+    modelMode: "direct",
     outputDir: "app/Models",
     outputEnumDir: "app/Enums",
     modelNamespace: "App\\Models",
     enumNamespace: "App\\Enums",
     prettier: true,
     overwriteExisting: true,
+
+    // Used only when modelMode is "base-and-concrete".
+    concreteModelOutputDir: "app/Models",
+    concreteModelNamespace: "App\\Models",
+    concreteModelStubPath: "stubs/concrete-model.stub",
+    concreteModelOverwriteExisting: false,
 
     // Use awobaz/compoships-style relations for composite keys.
     awobaz: false,
@@ -434,8 +441,13 @@ module.exports = {
 | `migrate`            | Migration generator overrides.                                           |
 | `modeler`            | Model and PHP enum generator overrides.                                  |
 | `modeler.castMaps`       | Custom Prisma-type to Eloquent-cast mappings.                            |
+| `modeler.modelMode`      | `"direct"` by default, or `"base-and-concrete"` for generated bases plus app models. |
 | `modeler.modelNamespace` | Full PHP namespace for generated Eloquent model classes.                 |
 | `modeler.enumNamespace`  | Full PHP namespace for generated PHP enum classes.                       |
+| `modeler.concreteModelOutputDir` | App-facing concrete model directory in base-and-concrete mode.    |
+| `modeler.concreteModelNamespace` | Full PHP namespace for app-facing concrete models.                |
+| `modeler.concreteModelStubPath` | Optional concrete model stub path.                                  |
+| `modeler.concreteModelOverwriteExisting` | Whether existing concrete model files may be overwritten. Defaults to `false`. |
 | `modeler.directives`    | Project-specific comment directive registry for model generation.        |
 | `modeler.hooks`         | Hook files or functions run after model/enums are built.                 |
 | `ts`                 | TypeScript generator overrides.                                          |
@@ -502,8 +514,13 @@ export interface ModelConfigOverride {
   groups?: string | StubGroupConfig[];
   noEmit?: boolean;
   namespace?: string;
+  modelMode?: "direct" | "base-and-concrete";
   modelStubPath?: string;
   enumStubPath?: string;
+  concreteModelOutputDir?: string;
+  concreteModelNamespace?: string;
+  concreteModelStubPath?: string;
+  concreteModelOverwriteExisting?: boolean;
   outputEnumDir?: string;
   awobaz?: boolean;
   allowedPivotExtraFields?: string[];
@@ -579,6 +596,52 @@ Backup baselines are also stored under the resolved root:
 This makes generation predictable when your schema and Laravel application live in different folders.
 
 Output paths do not imply PHP namespaces. If generated models or enums live outside the default Laravel PSR-4 layout, set `modeler.modelNamespace` and `modeler.enumNamespace` explicitly.
+
+### Base and concrete models
+
+By default, model generation stays direct:
+
+```txt
+Prisma User -> App\Models\User
+```
+
+For projects that want generated code isolated from app-owned model code, enable base-and-concrete mode:
+
+```js
+module.exports = {
+  modeler: {
+    modelMode: "base-and-concrete",
+  },
+};
+```
+
+With only that option, LaraSchema writes:
+
+```txt
+app/Models/Generated/User.php  -> App\Models\Generated\User
+app/Models/User.php            -> App\Models\User extends App\Models\Generated\User
+```
+
+Generated base models are abstract and relations inside them target the concrete app-facing namespace, for example `\App\Models\Post::class`. Concrete model files are user-owned and are create-if-missing by default; existing concrete files are not overwritten unless `concreteModelOverwriteExisting: true` is set.
+
+Custom base, concrete, and enum destinations can be configured independently:
+
+```js
+module.exports = {
+  modeler: {
+    modelMode: "base-and-concrete",
+
+    outputDir: "generated/base-models",
+    modelNamespace: "Domain\\Schema\\Base",
+
+    concreteModelOutputDir: "generated/app-models",
+    concreteModelNamespace: "Domain\\App\\Models",
+
+    outputEnumDir: "generated/php-enums",
+    enumNamespace: "Domain\\Schema\\Enums",
+  },
+};
+```
 
 ---
 

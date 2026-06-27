@@ -1,0 +1,9 @@
+<?php
+
+namespace ${model.namespace};
+
+${model.imports.join('\n')}
+
+class ${model.className} extends ${model.extends}
+{
+}

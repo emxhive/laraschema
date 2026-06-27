@@ -4,6 +4,7 @@ import { ModelDefinition, EnumDefinition } from '@/generators/models/model.types
 import { decorate } from '@/shared/naming/decorate';
 import { formatStub } from '@/core/stubs/format-stub';
 import { resolveStub } from '@/core/stubs/resolve-stub';
+import { getStubPath } from '@/core/stubs/get-stub-path';
 import type { StubConfig } from '@/core/stubs/stub-config.types';
 import { relationTemplate } from '@/generators/models/relations/template-builder.js';
 
@@ -20,6 +21,7 @@ export class StubModelPrinter {
    // caches for current stub paths
    #currentModelStub = '';
    #currentEnumStub = '';
+   #currentConcreteModelStub = '';
 
    // compiled template functions
    private modelTmpl!: (
@@ -30,6 +32,7 @@ export class StubModelPrinter {
       relationships: { toString(): string }
    ) => string;
    private enumTmpl!: (enumDef: EnumDefinition) => string;
+   private concreteModelTmpl!: (model: ModelDefinition) => string;
 
    constructor(
       /** stubDir + groups config */
@@ -37,7 +40,9 @@ export class StubModelPrinter {
       /** global override for all models */
       private globalModelStub?: string,
       /** global override for all enums */
-      private globalEnumStub?: string
+      private globalEnumStub?: string,
+      /** global override for concrete app-facing models */
+      private globalConcreteModelStub?: string
    ) { }
 
    /** Render a single enum class. */
@@ -73,6 +78,12 @@ export class StubModelPrinter {
                .join('\n\n');
          }
       });
+   }
+
+   /** Render a concrete app-facing model wrapper. */
+   public printConcreteModel(model: ModelDefinition): string {
+      this.ensureConcreteModelStub();
+      return this.concreteModelTmpl(model);
    }
 
    /** Render multiple models, each with its own `content`, separated by two newlines. */
@@ -143,5 +154,22 @@ export class StubModelPrinter {
       ) as typeof this.enumTmpl;
 
       this.#currentEnumStub = stubPath;
+   }
+
+   /** Load & compile the concrete model stub. */
+   private ensureConcreteModelStub() {
+      const stubPath = this.globalConcreteModelStub
+         ? path.resolve(process.cwd(), this.globalConcreteModelStub)
+         : getStubPath("concrete-model.stub");
+
+      if (stubPath === this.#currentConcreteModelStub) return;
+
+      const raw = fs.readFileSync(path.resolve(stubPath), 'utf-8').trim();
+      this.concreteModelTmpl = new Function(
+         'model',
+         `return \`${formatStub(raw)}\`;`
+      ) as typeof this.concreteModelTmpl;
+
+      this.#currentConcreteModelStub = stubPath;
    }
 }

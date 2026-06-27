@@ -255,10 +255,20 @@ export interface MigratorConfigOverride extends LaravelGeneratorConfig {
 }
 
 export interface ModelConfigOverride extends LaravelGeneratorConfig {
+   /** Model generation mode. Defaults to direct. */
+   modelMode?: "direct" | "base-and-concrete";
    /** Optional explicit PHP model stub file path. */
    modelStubPath?: string;
    /** Optional explicit PHP enum stub file path. */
    enumStubPath?: string;
+   /** Directory for app-facing concrete models in base-and-concrete mode. */
+   concreteModelOutputDir?: string;
+   /** Full PHP namespace for app-facing concrete models in base-and-concrete mode. */
+   concreteModelNamespace?: string;
+   /** Optional explicit concrete PHP model stub file path. */
+   concreteModelStubPath?: string;
+   /** Whether concrete user-owned model files may be overwritten. Defaults to false. */
+   concreteModelOverwriteExisting?: boolean;
    /**
     * Extra folder for PHP enums (modeler only).
     *
