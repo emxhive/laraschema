@@ -44,10 +44,55 @@ export type CastMapValue =
    | string
    | ((ctx: CastMapContext) => string);
 
+export type WriterTracking = "snapshot" | "hash";
+
+export type WriterConflictStrategy =
+   | "merge"
+   | "overwrite"
+   | "fail"
+   | "skip";
+
+export interface WriterConfig {
+   /**
+    * How LaraSchema tracks generated file identity.
+    *
+    * snapshot:
+    * Existing behavior. Use generated snapshots/backups as the prior generated baseline.
+    *
+    * hash:
+    * Track normalized generated-content hashes in a manifest.
+    *
+    * Defaults to snapshot.
+    */
+   tracking?: WriterTracking;
+
+   /**
+    * What LaraSchema does when writing an existing generated file.
+    *
+    * merge:
+    * Existing behavior. Attempt merge-safe write.
+    *
+    * overwrite:
+    * Replace the target with newly generated content.
+    *
+    * fail:
+    * Stop generation instead of writing conflict markers or overwriting.
+    *
+    * skip:
+    * Leave the existing file unchanged and continue.
+    *
+    * Defaults to merge.
+    */
+   conflictStrategy?: WriterConflictStrategy;
+}
+
 /* ------------------------------------------------------------
  *  Per-generator overrides  (migration / modeler / ts)
  * ---------------------------------------------------------- */
 export interface LaravelGeneratorConfig {
+   /** Configurable behavior for generated files. */
+   writer?: WriterConfig;
+
    /** Optional prefix applied to *physical* table names. */
    tablePrefix?: string;
    /** Optional suffix applied to *physical* table names. */
@@ -96,6 +141,9 @@ export interface LaravelGeneratorConfig {
 export interface LaravelSharedConfig {
    /** Optional Laravel app root for generated outputs/backups. */
    rootDir?: string;
+
+   /** Configurable behavior for generated files. */
+   writer?: WriterConfig;
 
    /** Table name decoration applied globally. */
    tablePrefix?: string;

@@ -66,6 +66,7 @@ export async function generateLaravelSchema(options: GeneratorOptions): Promise<
       noEmit: pick('noEmit', false),
       defaultMaps: pick('defaultMaps', {}),
       allowUnsigned: pick('allowUnsigned', false),
+      writer: pick("writer"),
    };
 
    addToConfig('migrator', { ...cfg, rootDir: shared.rootDir });

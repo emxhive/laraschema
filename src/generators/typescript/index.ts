@@ -139,6 +139,7 @@ export async function generateTypesFromPrisma(options: GeneratorOptions) {
         moduleName: pick("moduleName", "database/prisma"),
         modelsFileName: pick("modelsFileName", "index"),
         enumsFileName: pick("enumsFileName", "enums"),
+        writer: pick("writer"),
     };
 
     // --- 4. Ensure TS output directory exists -------------------------

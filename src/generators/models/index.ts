@@ -89,6 +89,7 @@ export async function generateLaravelModels(options: GeneratorOptions) {
         concreteModelStubPath: pick("concreteModelStubPath"),
         concreteModelOverwriteExisting: pick("concreteModelOverwriteExisting", false),
         hooks: pick("hooks"),
+        writer: pick("writer"),
     };
 
     const activeConfig = {...cfg, rootDir: shared.rootDir};

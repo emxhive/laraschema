@@ -456,9 +456,23 @@ module.exports = {
 <summary>Full configuration shape</summary>
 
 ```ts
+export type WriterTracking = "snapshot" | "hash";
+
+export type WriterConflictStrategy =
+  | "merge"
+  | "overwrite"
+  | "fail"
+  | "skip";
+
+export interface WriterConfig {
+  tracking?: WriterTracking;
+  conflictStrategy?: WriterConflictStrategy;
+}
+
 export interface LaravelSharedConfig {
   rootDir?: string;
   schemaPath?: string;
+  writer?: WriterConfig;
 
   tablePrefix?: string;
   tableSuffix?: string;
@@ -489,6 +503,7 @@ export type CastMapValue =
   | ((ctx: CastMapContext) => string);
 
 export interface MigratorConfigOverride {
+  writer?: WriterConfig;
   tablePrefix?: string;
   tableSuffix?: string;
   stubDir?: string;
@@ -505,6 +520,7 @@ export interface MigratorConfigOverride {
 }
 
 export interface ModelConfigOverride {
+  writer?: WriterConfig;
   tablePrefix?: string;
   tableSuffix?: string;
   stubDir?: string;
@@ -532,6 +548,7 @@ export interface ModelConfigOverride {
 }
 
 export interface TypesConfigOverride {
+  writer?: WriterConfig;
   tablePrefix?: string;
   tableSuffix?: string;
   stubDir?: string;
@@ -775,6 +792,53 @@ This applies to:
 * models
 * PHP enums
 * TypeScript outputs
+
+### Configurable Writer Settings
+
+You can customize how LaraSchema tracks generated file identity and resolves conflict situations using the `writer` configuration block. It is defined under `laraschema.config.js` either at the shared root config level (applying to all generators) or overridden per-generator (e.g. under `modeler` or `ts`).
+
+```js
+module.exports = {
+  // Option 1: Shared root config level (affects migrations, modeler, and typescript)
+  writer: {
+    tracking: "snapshot",
+    conflictStrategy: "merge",
+  },
+
+  modeler: {
+    // Option 2: Generator override level (takes precedence)
+    writer: {
+      tracking: "hash",
+      conflictStrategy: "overwrite",
+    },
+  },
+};
+```
+
+#### Precedence Order
+
+Configuration lookup follows this precedence order:
+1. Generator-specific `writer` configuration (e.g. `modeler.writer`, `ts.writer`, `migrate.writer`)
+2. Shared top-level `writer` configuration (e.g. `shared.writer`)
+3. Defaults: `{ tracking: "snapshot", conflictStrategy: "merge" }`
+
+#### `writer.tracking`
+
+Determines how LaraSchema tracks the identity of previously generated content:
+
+* **`"snapshot"` (Default)**: Uses snapshot/backup baseline files saved under `.laraschema/backups/` to compare against. Useful when you want git-like 3-way merge capabilities natively using prior baselines.
+* **`"hash"`**: Tracks canonicalized generated-content SHA-256 hashes in a central manifest file under `.laraschema/generated-manifest.json`. This detects if files have been modified since the last generation without needing full file backup snapshots.
+
+#### `writer.conflictStrategy`
+
+Determines what action is taken when an existing file differs from what LaraSchema expects to generate:
+
+* **`"merge"` (Default)**: Attempts a 3-way git-style merge. If conflicts cannot be resolved cleanly, writes conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`) directly into the file.
+* **`"overwrite"`**: Blindly replaces the target file with the newly generated content. This is useful for generated-only files where manual edits should never be preserved.
+  > [!WARNING]
+  > **Do not use `"overwrite"` for database migrations by default.** Migrations represent historical schema evolution artifacts where state is incremental; overwriting them is risky. `"overwrite"` is ideal for generator-owned models or TS definitions.
+* **`"fail"`**: Stops execution and throws a clear error message without writing any markers or making changes on disk if the file has been modified. Ideal for CI pipelines to prevent accidental local edits from entering source control.
+* **`"skip"`**: Leaves the existing modified file unchanged, logs the skipped file and continues generation.
 
 ---
 
